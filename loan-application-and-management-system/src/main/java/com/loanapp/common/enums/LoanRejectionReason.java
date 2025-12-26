@@ -1,0 +1,13 @@
+package com.loanapp.common.enums;
+
+public enum LoanRejectionReason {
+    LOW_CREDIT_SCORE,
+    INSUFFICIENT_INCOME,
+    AGE_NOT_ELIGIBLE,
+    TENURE_OUT_OF_RANGE,
+    AMOUNT_OUT_OF_RANGE,
+    ACTIVE_LOAN_EXISTS,
+    MAX_ACTIVE_LOANS_REACHED,
+    KYC_INCOMPLETE,
+    POLICY_RESTRICTION
+}

@@ -1,0 +1,49 @@
+spring.application.name=loan-application-and-management-system
+
+spring.application.name=loan-application-and-management-system
+
+
+server.port=3000
+# MySQL Connection
+spring.datasource.url=jdbc:mysql://localhost:3306/loanappl
+spring.datasource.username=root
+spring.datasource.password=Root123$
+
+# Driver class name (often optional in recent Spring Boot versions as it's auto-detected)
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# JPA/Hibernate Properties (Optional, for database interaction settings)
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
+
+
+#
+#After starting your application, you can view your API documentation at the following URLs (assuming standard ports):
+#Swagger UI: http://localhost:8080/swagger-ui.html
+#OpenAPI JSON: http://localhost:8080/v3/api-docs
+
+# --- Swagger UI Configuration ---
+# Custom path for the Swagger UI (Default: /swagger-ui/index.html)
+springdoc.swagger-ui.path=/swagger-ui.html
+
+# Enable or disable the Swagger UI
+springdoc.swagger-ui.enabled=true
+
+# --- OpenAPI Docs Configuration ---
+# Custom path for the raw OpenAPI JSON/YAML (Default: /v3/api-docs)
+springdoc.api-docs.path=/api-docs
+
+# Enable or disable the API docs generation
+springdoc.api-docs.enabled=true
+
+# --- Advanced Customization ---
+# Sort endpoints alphabetically in the UI
+springdoc.swagger-ui.operations-sorter=alpha
+
+# Display the request duration in the UI
+springdoc.swagger-ui.display-request-duration=true
+
+# Groups specific packages if needed (Optional)
+# springdoc.packages-to-scan=com.example.controller
