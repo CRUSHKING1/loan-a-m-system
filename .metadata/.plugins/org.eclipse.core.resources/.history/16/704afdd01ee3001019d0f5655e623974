@@ -1,0 +1,175 @@
+package com.loanapp.kyc.service;
+
+import com.loanapp.common.enums.KycStatus;
+import com.loanapp.config.security.useridgetter.SecurityUtils;
+import com.loanapp.kyc.dto.KycRequestDto;
+import com.loanapp.kyc.dto.KycResponseDto;
+import com.loanapp.kyc.entity.Kyc;
+import com.loanapp.kyc.exception.KycNotFoundException;
+import com.loanapp.kyc.repository.KycRepository;
+import com.loanapp.kyc.util.KycMapper;  // Use KycMapper here
+
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+//@Service  refercne for you
+//public class KycServiceImpl implements KycService {
+//
+//    private final KycRepository kycRepository;
+//    private final KycMapper kycMapper;
+//
+//    public KycServiceImpl(KycRepository kycRepository, KycMapper kycMapper) {
+//        this.kycRepository = kycRepository;
+//        this.kycMapper = kycMapper; // Inject the mapper
+//    }
+//
+//    @Override
+//    public KycResponseDto submitKyc(Long userId, KycRequestDto dto) {
+//        Kyc kyc = kycMapper.toEntity(dto); // Use the mapper to convert DTO to entity
+//        kyc.setUserId(userId);
+//        kyc.setStatus(KycStatus.PENDING); // Set status to PENDING by default
+//        kyc = kycRepository.save(kyc); // Save to the database
+//
+//        return kycMapper.toResponseDto(kyc); // Convert the entity to DTO and return
+//    }
+//
+//    @Override
+//    public KycResponseDto approveKyc(Long userId) {
+//        Kyc kyc = kycRepository.findByUserId(userId)
+//                .orElseThrow(() -> new RuntimeException("KYC not found"));
+//
+//        kyc.setStatus(KycStatus.APPROVED);
+//        kyc = kycRepository.save(kyc); // Save the updated KYC
+//
+//        return kycMapper.toResponseDto(kyc); // Convert the entity to DTO and return
+//    }
+//
+//    @Override
+//    public KycResponseDto rejectKyc(Long userId) {
+//        Kyc kyc = kycRepository.findByUserId(userId)
+//                .orElseThrow(() -> new RuntimeException("KYC not found"));
+//
+//        kyc.setStatus(KycStatus.REJECTED);
+//        kyc = kycRepository.save(kyc); // Save the updated KYC
+//
+//        return kycMapper.toResponseDto(kyc); // Convert the entity to DTO and return
+//    }
+//
+//    @Override
+//    public boolean isKycApproved(Long userId) {
+//        return kycRepository.findByUserId(userId)
+//                .map(k -> k.getStatus() == KycStatus.APPROVED)
+//                .orElse(false);
+//    }
+//
+//    @Override
+//    public List<KycResponseDto> getPendingKycs() {
+//        return kycRepository.findByStatus(KycStatus.PENDING)
+//                .stream()
+//                .map(kycMapper::toResponseDto)
+//                .toList();
+//    }
+//
+//    @Override
+//    public KycResponseDto getKycByUserId(Long userId) {
+//        Kyc kyc = kycRepository.findByUserId(userId)
+//                .orElseThrow(() -> new RuntimeException("KYC not found"));
+//        return kycMapper.toResponseDto(kyc); // Use the mapper to convert entity to DTO
+//    }
+//}
+
+
+
+@Service
+public class KycServiceImpl implements KycService {
+
+    private final KycRepository kycRepository;
+    private final KycMapper kycMapper;
+
+    public KycServiceImpl(KycRepository kycRepository, KycMapper kycMapper) {
+        this.kycRepository = kycRepository;
+        this.kycMapper = kycMapper;
+    }
+
+    @Override
+    public KycResponseDto submitKyc(Long userId, KycRequestDto dto) {
+        Long authenticatedUserId = SecurityUtils.getCurrentUserId();
+        
+        // This check ensures that the authenticated user is submitting their own KYC
+        if (!authenticatedUserId.equals(userId)) { // reduntant but its double checking
+            throw new AccessDeniedException("You can only submit your own KYC.");
+        }
+
+        Kyc kyc = kycMapper.toEntity(dto);
+        kyc.setUserId(userId);
+        kyc.setStatus(KycStatus.PENDING);
+        kyc = kycRepository.save(kyc);
+
+        return kycMapper.toResponseDto(kyc);
+    }
+
+    @Override
+    public KycResponseDto getKycByUserId(Long userId) throws KycNotFoundException {
+        Long authenticatedUserId = SecurityUtils.getCurrentUserId();
+        
+        // This check ensures that the authenticated user is retrieving their own KYC
+        if (!authenticatedUserId.equals(userId)) {
+            throw new AccessDeniedException("You can only access your own KYC data.");
+        }
+
+        Kyc kyc = kycRepository.findByUserId(userId)
+                .orElseThrow(() -> new KycNotFoundException("KYC not found"));
+        
+        return kycMapper.toResponseDto(kyc);
+    }
+    
+    @Override
+    public KycResponseDto approveKyc(Long userId) throws KycNotFoundException {
+        // Fetch the KYC data from the repository
+        Kyc kyc = kycRepository.findByUserId(userId)
+                .orElseThrow(() -> new KycNotFoundException("KYC not found"));
+
+        // Update the status of the KYC
+        kyc.setStatus(KycStatus.APPROVED);
+        kyc = kycRepository.save(kyc);
+
+        return kycMapper.toResponseDto(kyc); // Convert entity to DTO
+    }
+  
+    
+	  @Override
+	  public boolean isKycApproved(Long userId) {
+	      return kycRepository.findByUserId(userId)
+	              .map(k -> k.getStatus() == KycStatus.APPROVED)
+	              .orElse(false);
+	  }
+    
+    
+    
+    @Override
+    public KycResponseDto rejectKyc(Long userId) throws KycNotFoundException {
+   
+        Kyc kyc = kycRepository.findByUserId(userId)
+                .orElseThrow(() -> new KycNotFoundException("KYC not found"));
+
+        // Update the status of the KYC
+        kyc.setStatus(KycStatus.REJECTED);
+        kyc = kycRepository.save(kyc);
+
+        return kycMapper.toResponseDto(kyc); // Convert entity to DTO
+    }
+
+    @Override
+    public List<KycResponseDto> getPendingKycs() {
+        // Fetch pending KYC records from the repository
+        return kycRepository.findByStatus(KycStatus.PENDING)
+                .stream()
+                .map(kycMapper::toResponseDto)
+                .toList();
+    }
+
+ 
+}
+

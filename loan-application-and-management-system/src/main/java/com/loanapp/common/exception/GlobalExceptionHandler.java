@@ -3,6 +3,7 @@ package com.loanapp.common.exception;
 
 
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -13,6 +14,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.loanapp.kyc.exception.KycNotFoundException;
 import com.loanapp.user.exception.UnauthorizedAccessException;
 import com.loanapp.user.exception.UserNotFoundException;
 
@@ -46,8 +48,7 @@ public class GlobalExceptionHandler {
 
         ErrorInfo errorInfo = new ErrorInfo(
                 "Internal Server Error",
-                HttpStatus.INTERNAL_SERVER_ERROR.value()
-        );
+                HttpStatus.INTERNAL_SERVER_ERROR);
 
         return new ResponseEntity<>(errorInfo, HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -76,5 +77,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UnauthorizedAccessException.class)
     public ResponseEntity<String> handleUnauthorizedAccess(UnauthorizedAccessException ex) {
         return new ResponseEntity<>(ex.getMessage(), HttpStatus.FORBIDDEN);
+    }
+    
+    
+    //kyc 
+    // Handle KYC Not Found Exception
+    @ExceptionHandler(KycNotFoundException.class)
+    public ResponseEntity<ErrorInfo> handleKycNotFound(KycNotFoundException ex) {
+    	
+        ErrorInfo errorInfo = new ErrorInfo(ex.getMessage(),HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(errorInfo, HttpStatus.NOT_FOUND);
     }
 }

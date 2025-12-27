@@ -1,6 +1,7 @@
 package com.loanapp.kyc.dto;
 
 import java.time.LocalDate;
+import java.time.Period;
 
 import lombok.Data;
 import lombok.Getter;
@@ -8,14 +9,42 @@ import lombok.Setter;
 
 import lombok.Data;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
+import java.time.LocalDate;
+
 @Data
 public class KycRequestDto {
 
+    @NotBlank(message = "Full name is required")
+    @Size(min = 2, max = 100, message = "Full name should be between 2 and 100 characters")
     private String fullName;
-    private String panNumber;
-    private String aadhaarLast4;
-    private Double monthlyIncome;
-    private String employmentStatus; // Employment status as String
-    private LocalDate dateOfBirth; // Date of birth as a String (ISO format yyyy-MM-dd)
 
+    @NotBlank(message = "PAN number is required")
+    @Pattern(regexp = "[A-Z]{5}[0-9]{4}[A-Z]{1}", message = "Invalid PAN number format")
+    private String panNumber;
+
+    @NotBlank(message = "Aadhaar last 4 digits are required")
+    @Pattern(regexp = "\\d{4}", message = "Aadhaar last 4 digits must be numeric")
+    private String aadhaarLast4;
+
+    @NotNull(message = "Monthly income is required")
+    @Min(value = 1000, message = "Monthly income must be at least 1000")
+    @Max(value = 10000000, message = "Monthly income must not exceed 10,000,000")
+    private Double monthlyIncome;
+
+    @NotBlank(message = "Employment status is required")
+    @Size(min = 2, max = 50, message = "Employment status should be between 2 and 50 characters")
+    private String employmentStatus;
+
+    @NotNull(message = "Date of birth is required")
+    @Past(message = "Date of birth must be in the past")
+    private LocalDate dateOfBirth;
 }
+

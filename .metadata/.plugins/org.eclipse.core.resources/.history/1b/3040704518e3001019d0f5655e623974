@@ -1,0 +1,33 @@
+package com.loanapp.kyc.controller;
+
+import com.loanapp.kyc.dto.KycRequestDto;
+import com.loanapp.kyc.dto.KycResponseDto;
+import com.loanapp.kyc.service.KycService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/user/kyc")
+public class KycUserController {
+
+    private final KycService kycService;
+
+    public KycUserController(KycService kycService) {
+        this.kycService = kycService;
+    }
+
+    // User submits KYC
+    @PostMapping("/{userId}")
+    public ResponseEntity<KycResponseDto> submitKyc(
+            @PathVariable Long userId,
+            @RequestBody KycRequestDto dto) {
+
+        return ResponseEntity.ok(kycService.submitKyc(userId, dto));
+    }
+
+    // User checks his KYC status
+    @GetMapping("/{userId}")
+    public ResponseEntity<KycResponseDto> getMyKyc(@PathVariable Long userId) {
+        return ResponseEntity.ok(kycService.getKycByUserId(userId));
+    }
+}

@@ -1,0 +1,32 @@
+package com.loanapp.kyc.dto;
+
+import java.time.LocalDate;
+import java.time.Period;
+
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+
+import lombok.Data;
+
+@Data
+public class KycRequestDto {
+
+    private String fullName;
+    private String panNumber;
+    private String aadhaarLast4;
+    private Double monthlyIncome;
+    private String employmentStatus; // Employment status as String
+    private LocalDate dateOfBirth; // Date of birth as a String (ISO format yyyy-MM-dd)
+   
+    public static int calculateAge(LocalDate birthDate) {
+        // Get the current date
+        LocalDate currentDate = LocalDate.now();
+
+        // Calculate the period between the birthdate and the current date
+        Period period = Period.between(birthDate, currentDate);
+
+        // Return the number of years in the period (i.e., the age)
+        return period.getYears();
+    }
+}

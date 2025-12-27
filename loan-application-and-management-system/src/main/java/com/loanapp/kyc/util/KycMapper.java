@@ -59,7 +59,6 @@ public class KycMapper {
         kyc.setStatus(responseDto.getStatus());
 
         // Assume other fields like monthlyIncome and employmentStatus are already set if needed
-
         return kyc;
     }
 }

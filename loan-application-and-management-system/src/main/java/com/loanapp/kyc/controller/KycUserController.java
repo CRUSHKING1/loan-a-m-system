@@ -1,10 +1,45 @@
 package com.loanapp.kyc.controller;
 
+import com.loanapp.config.security.useridgetter.SecurityUtils;
 import com.loanapp.kyc.dto.KycRequestDto;
 import com.loanapp.kyc.dto.KycResponseDto;
+import com.loanapp.kyc.exception.KycNotFoundException;
 import com.loanapp.kyc.service.KycService;
+
+import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+//previous code for refernce 
+//@RestController
+//@RequestMapping("/api/user/kyc")
+//public class KycUserController {
+//
+//    private final KycService kycService;
+//
+//    public KycUserController(KycService kycService) {
+//        this.kycService = kycService;
+//    }
+//
+//    // User submits KYC
+//    @PostMapping("/{userId}")
+//    public ResponseEntity<KycResponseDto> submitKyc(
+//            @PathVariable Long userId,
+//            @RequestBody KycRequestDto dto) {
+//         
+//    	
+//    	
+//        return ResponseEntity.ok(kycService.submitKyc(userId, dto));
+//    }
+//
+//    // User checks his KYC status
+//    @GetMapping("/{userId}")
+//    public ResponseEntity<KycResponseDto> getMyKyc(@PathVariable Long userId) {
+//        return ResponseEntity.ok(kycService.getKycByUserId(userId));
+//    }
+//}
+
+
 
 @RestController
 @RequestMapping("/api/user/kyc")
@@ -16,18 +51,25 @@ public class KycUserController {
         this.kycService = kycService;
     }
 
-    // User submits KYC
-    @PostMapping("/{userId}")
-    public ResponseEntity<KycResponseDto> submitKyc(
-            @PathVariable Long userId,
-            @RequestBody KycRequestDto dto) {
-
+    // User submits KYC (no userId in path, extract from JWT)
+    @PostMapping("/submit")
+    public ResponseEntity<KycResponseDto> submitKyc(@RequestBody @Valid KycRequestDto dto) {
+        // Extract userId from JWT token using SecurityUtils
+        Long userId = SecurityUtils.getCurrentUserId();
+        
         return ResponseEntity.ok(kycService.submitKyc(userId, dto));
     }
 
-    // User checks his KYC status
-    @GetMapping("/{userId}")
-    public ResponseEntity<KycResponseDto> getMyKyc(@PathVariable Long userId) {
+    // User checks his KYC status (no userId in path, extract from JWT)
+    @GetMapping("/status")
+    public ResponseEntity<KycResponseDto> getMyKyc() throws KycNotFoundException {
+        // Extract userId from JWT token using SecurityUtils
+        Long userId = SecurityUtils.getCurrentUserId();
+
         return ResponseEntity.ok(kycService.getKycByUserId(userId));
     }
 }
+
+
+
+

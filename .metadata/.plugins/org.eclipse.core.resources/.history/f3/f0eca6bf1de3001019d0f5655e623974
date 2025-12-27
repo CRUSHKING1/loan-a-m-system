@@ -1,0 +1,15 @@
+package com.loanapp.kyc.exception;
+
+public class KycNotFound extends Exception {
+
+	public KycNotFound() {
+		super();
+		
+	}
+
+	public KycNotFound(String message) {
+		super(message);
+		
+	}
+
+}
