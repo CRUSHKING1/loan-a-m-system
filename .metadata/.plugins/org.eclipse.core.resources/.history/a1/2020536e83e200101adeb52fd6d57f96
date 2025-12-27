@@ -1,0 +1,16 @@
+
+package com.loanapp.user.service;
+
+import java.util.List;
+
+import com.loanapp.user.dto.RegisterUserRequestDto;
+import com.loanapp.user.dto.UserResponseDto;
+
+public interface UserService {
+
+    UserResponseDto registerUser(RegisterUserRequestDto request);
+
+    UserResponseDto getUserById(Long userId);
+
+	List<UserResponseDto> getAllUsers();
+}

@@ -40,5 +40,5 @@ public class User extends Auditable {
     @Column(name = "is_active")
     private Boolean isActive = true;
 
-    // getters and setters
+ 
 }

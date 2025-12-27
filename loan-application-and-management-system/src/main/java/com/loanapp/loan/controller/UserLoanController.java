@@ -5,6 +5,8 @@ import com.loanapp.loan.dto.LoanApplyRequestDto;
 import com.loanapp.loan.dto.LoanPreviewResponseDto;
 import com.loanapp.loan.dto.LoanResponseDto;
 import com.loanapp.loan.service.LoanService;
+import com.loanapp.user.exception.UserNotFoundException;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,14 +24,14 @@ public class UserLoanController {
 
     // Endpoint for applying a loan
     @PostMapping("/apply")
-    public ResponseEntity<LoanResponseDto> applyLoan(@RequestParam Long userId, @RequestBody LoanApplyRequestDto request) {
+    public ResponseEntity<LoanResponseDto> applyLoan(@RequestParam Long userId, @RequestBody LoanApplyRequestDto request) throws UserNotFoundException {
         LoanResponseDto response = loanService.applyLoan(userId, request);
         return ResponseEntity.ok(response);
     }
 
     // Endpoint for previewing a loan (eligibility check without applying)
     @PostMapping("/preview")
-    public ResponseEntity<LoanPreviewResponseDto> previewLoan(@RequestParam Long userId, @RequestBody LoanApplyRequestDto request) {
+    public ResponseEntity<LoanPreviewResponseDto> previewLoan(@RequestParam Long userId, @RequestBody LoanApplyRequestDto request) throws UserNotFoundException {
         LoanPreviewResponseDto preview = loanService.previewLoan(userId, request);
         return ResponseEntity.ok(preview);
     }

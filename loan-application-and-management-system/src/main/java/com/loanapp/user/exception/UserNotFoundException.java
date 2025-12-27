@@ -1,7 +1,7 @@
 
 package com.loanapp.user.exception;
 
-public class UserNotFoundException extends RuntimeException {
+public class UserNotFoundException extends  Exception {
 
     public UserNotFoundException() {
     	

@@ -1,39 +1,68 @@
-//package com.loanapp.controller;
-//
-//import com.loanapp.dto.*;
-//import com.loanapp.security.service.CustomUserDetailsService;
-//import com.loanapp.security.util.JwtUtil;
-//import org.springframework.security.authentication.*;
-//import org.springframework.web.bind.annotation.*;
-//
-//@RestController
-//@RequestMapping("/auth")
-//public class AuthController {
-//
-//    private final AuthenticationManager authenticationManager;
-//    private final JwtUtil jwtUtil;
-//    private final CustomUserDetailsService userDetailsService;
-//
-//    public AuthController(AuthenticationManager authenticationManager,
-//                          JwtUtil jwtUtil,
-//                          CustomUserDetailsService userDetailsService) {
-//        this.authenticationManager = authenticationManager;
-//        this.jwtUtil = jwtUtil;
-//        this.userDetailsService = userDetailsService;
-//    }
-//
-//    @PostMapping("/login")
-//    public LoginResponse login(@RequestBody LoginRequest request) {
-//
-//        authenticationManager.authenticate(
-//                new UsernamePasswordAuthenticationToken(
-//                        request.getUsername(),
-//                        request.getPassword())
-//        );
-//
-//        var userDetails =
-//                userDetailsService.loadUserByUsername(request.getUsername());
-//
-//        return new LoginResponse(jwtUtil.generateToken(userDetails));
-//    }
-//}
+package com.loanapp.config.controller;
+
+
+
+import com.loanapp.config.dto.LoginRequest;
+import com.loanapp.config.dto.LoginResponse;
+import com.loanapp.config.security.service.CustomUserDetailsService;
+import com.loanapp.config.security.util.JwtUtil;
+import com.loanapp.user.dto.RegisterUserRequestDto;
+import com.loanapp.user.dto.UserResponseDto;
+import com.loanapp.user.exception.UserAlreadyExistsException;
+import com.loanapp.user.service.UserService;
+
+import jakarta.validation.Valid;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.*;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/auth")
+public class AuthController {
+
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtil jwtUtil;
+    private final CustomUserDetailsService userDetailsService;
+    private final UserService userService;
+
+ 
+
+    public AuthController(AuthenticationManager authenticationManager, JwtUtil jwtUtil,
+			CustomUserDetailsService userDetailsService, UserService userService) {
+		super();
+		this.authenticationManager = authenticationManager;
+		this.jwtUtil = jwtUtil;
+		this.userDetailsService = userDetailsService;
+		this.userService = userService;
+	}
+
+
+
+	@PostMapping("/login")
+    public LoginResponse login(@RequestBody LoginRequest request) {
+
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getUsername(),
+                        request.getPassword())
+        );
+
+        var userDetails =
+                userDetailsService.loadUserByUsername(request.getUsername());
+
+        return new LoginResponse(jwtUtil.generateToken(userDetails));
+    }
+    
+  
+  // bad credentials exception add
+    @PostMapping("/register")
+    public ResponseEntity<UserResponseDto> registerUser(@Valid @RequestBody RegisterUserRequestDto request) throws UserAlreadyExistsException {
+        return new ResponseEntity<>(
+                userService.registerUser(request),
+                HttpStatus.CREATED
+        );
+    }
+
+}

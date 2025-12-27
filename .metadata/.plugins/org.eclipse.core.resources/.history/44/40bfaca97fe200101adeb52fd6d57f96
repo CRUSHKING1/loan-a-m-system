@@ -1,0 +1,12 @@
+package com.loanapp.config.security.useridgetter;
+
+public final class SecurityUtils {
+
+    private SecurityUtils() {}
+
+    public static Long getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        CustomUserDetails user = (CustomUserDetails) auth.getPrincipal();
+        return user.getUser().getId();
+    }
+}

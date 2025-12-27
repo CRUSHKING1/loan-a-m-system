@@ -13,6 +13,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.loanapp.user.exception.UnauthorizedAccessException;
+import com.loanapp.user.exception.UserNotFoundException;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -60,5 +63,18 @@ public class GlobalExceptionHandler {
 
         // Return the error messages in the response body with BAD_REQUEST status
         return new ResponseEntity<>(errorMessages, HttpStatus.BAD_REQUEST);
+    }
+    
+    
+    // Handle UserNotFoundException
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<String> handleUserNotFound(UserNotFoundException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    // Handle UnauthorizedAccessException
+    @ExceptionHandler(UnauthorizedAccessException.class)
+    public ResponseEntity<String> handleUnauthorizedAccess(UnauthorizedAccessException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.FORBIDDEN);
     }
 }

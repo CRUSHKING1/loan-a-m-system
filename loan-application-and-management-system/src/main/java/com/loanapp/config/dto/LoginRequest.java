@@ -1,7 +1,10 @@
-//package com.loanapp.dto;
-//
-//public class LoginRequest {
-//    private String username;
-//    private String password;
-//
-//}
+package com.loanapp.config.dto;
+
+import lombok.Data;
+
+@Data
+public class LoginRequest {
+    private String username;
+    private String password;
+
+}

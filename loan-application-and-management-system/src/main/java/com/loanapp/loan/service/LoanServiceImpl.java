@@ -47,7 +47,7 @@ public class LoanServiceImpl implements LoanService {
 	}
 
 	@Override
-    public LoanResponseDto applyLoan(Long userId, LoanApplyRequestDto request) {
+    public LoanResponseDto applyLoan(Long userId, LoanApplyRequestDto request) throws UserNotFoundException {
             //using repo instead of servcie for time restrcition
 		   User user = userRepository.findById(userId)      // ** make exception in this servcie
 	                .orElseThrow(() -> new UserNotFoundException("User not found"));
@@ -104,7 +104,7 @@ public class LoanServiceImpl implements LoanService {
     }
 
     @Override
-    public LoanPreviewResponseDto previewLoan(Long userId, LoanApplyRequestDto request) {
+    public LoanPreviewResponseDto previewLoan(Long userId, LoanApplyRequestDto request) throws UserNotFoundException {
         // Check loan eligibility (without saving it to DB)
     	   User user = userRepository.findById(userId)      // ** make exception in this servcie
 	                .orElseThrow(() -> new UserNotFoundException("User not found"));
