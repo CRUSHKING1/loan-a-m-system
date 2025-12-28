@@ -23,6 +23,7 @@ public class UserEmiController {
     @GetMapping("/{loanId}")
     public List<EmiResponseDto> getAll(@PathVariable Long loanId) {
         return emiService.getAllEmis(loanId);
+        
     }
 
     @GetMapping("/{loanId}/upcoming")

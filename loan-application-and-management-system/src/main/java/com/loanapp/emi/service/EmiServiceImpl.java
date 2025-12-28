@@ -45,6 +45,8 @@ public class EmiServiceImpl implements EmiService {
 
     @Override
     public List<EmiResponseDto> getAllEmis(Long loanId) {
+    	
+    	
         return emiRepository.findByLoanId(loanId)
                 .stream().map(this::map).toList();
     }

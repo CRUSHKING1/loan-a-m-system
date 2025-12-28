@@ -44,8 +44,48 @@ import com.loanapp.kyc.service.KycService;
 //}
 
 
+//@RestController
+//@RequestMapping("/api/admin/kyc")
+//public class KycAdminController {
+//
+//    private final KycService kycService;
+//
+//    public KycAdminController(KycService kycService) {
+//        this.kycService = kycService;
+//    }
+//
+//    // Admin can view all pending KYCs
+//    @PreAuthorize("hasRole('ADMIN')")
+//    @GetMapping("/pending")
+//    public ResponseEntity<List<KycResponseDto>> getPendingKycs() {
+//        List<KycResponseDto> pendingKycs = kycService.getPendingKycs();
+//        return ResponseEntity.ok(pendingKycs);
+//    }
+//
+//    // Admin can approve KYC
+//    @PutMapping("/{kycId}/approve")
+//    public ResponseEntity<KycResponseDto> approveKyc(@PathVariable Long kycId) {
+//        return ResponseEntity.ok(kycService.approveKyc(kycId));
+//    }
+//
+//    // Admin can reject KYC
+//    @PreAuthorize("hasRole('ADMIN')")
+//    @PutMapping("/{userId}/reject")
+//    public ResponseEntity<KycResponseDto> rejectKyc(@PathVariable Long userId) throws KycNotFoundException {
+//        KycResponseDto kycResponse = kycService.rejectKyc(userId);
+//        return ResponseEntity.ok(kycResponse);
+//    }
+//
+//}
+
+
+
+
+
+
 @RestController
 @RequestMapping("/api/admin/kyc")
+@PreAuthorize("hasRole('ADMIN')")
 public class KycAdminController {
 
     private final KycService kycService;
@@ -54,29 +94,20 @@ public class KycAdminController {
         this.kycService = kycService;
     }
 
-    // Admin can view all pending KYCs
-    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/pending")
     public ResponseEntity<List<KycResponseDto>> getPendingKycs() {
-        List<KycResponseDto> pendingKycs = kycService.getPendingKycs();
-        return ResponseEntity.ok(pendingKycs);
+        return ResponseEntity.ok(kycService.getPendingKycs());
     }
 
-    // Admin can approve KYC
-    @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping("/{userId}/approve")
-    public ResponseEntity<KycResponseDto> approveKyc(@PathVariable Long userId) throws KycNotFoundException {
-        KycResponseDto kycResponse = kycService.approveKyc(userId);
-        return ResponseEntity.ok(kycResponse);
+    @PutMapping("/{kycId}/approve")
+    public ResponseEntity<KycResponseDto> approve(@PathVariable Long kycId) {
+        return ResponseEntity.ok(kycService.approveKyc(kycId));
     }
 
-    // Admin can reject KYC
-    @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping("/{userId}/reject")
-    public ResponseEntity<KycResponseDto> rejectKyc(@PathVariable Long userId) throws KycNotFoundException {
-        KycResponseDto kycResponse = kycService.rejectKyc(userId);
-        return ResponseEntity.ok(kycResponse);
+    @PutMapping("/{kycId}/reject")
+    public ResponseEntity<KycResponseDto> reject(@PathVariable Long kycId) {
+        return ResponseEntity.ok(kycService.rejectKyc(kycId));
     }
-
 }
+
 

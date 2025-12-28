@@ -42,10 +42,7 @@ public class KycMapper {
         responseDto.setStatus(kyc.getStatus());
         responseDto.setMonthlyIncome(kyc.getMonthlyIncome());
         responseDto.setEmploymentStatus(kyc.getEmploymentStatus().name());
-
-        // Calculate and set the age dynamically
-        responseDto.setAge(kyc.getAge());
-
+        responseDto.setKycId(kyc.getId());
         return responseDto;
     }
 

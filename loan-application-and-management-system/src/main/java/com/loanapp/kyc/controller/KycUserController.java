@@ -41,6 +41,38 @@ import org.springframework.web.bind.annotation.*;
 
 
 
+//@RestController
+//@RequestMapping("/api/user/kyc")
+//public class KycUserController {
+//
+//    private final KycService kycService;
+//
+//    public KycUserController(KycService kycService) {
+//        this.kycService = kycService;
+//    }
+//
+//    // User submits KYC (no userId in path, extract from JWT)
+//    @PostMapping("/submit")
+//    public ResponseEntity<KycResponseDto> submitKyc(@RequestBody @Valid KycRequestDto dto) {
+//        // Extract userId from JWT token using SecurityUtils
+//        Long userId = SecurityUtils.getCurrentUserId();
+//        
+//        return ResponseEntity.ok(kycService.submitKyc(userId, dto));
+//    }
+//
+//    // User checks his KYC status (no userId in path, extract from JWT)
+//    @GetMapping("/status")
+//    public ResponseEntity<KycResponseDto> getMyKyc() throws KycNotFoundException {
+//        Long userId = SecurityUtils.getCurrentUserId();
+//        return ResponseEntity.ok(kycService.getLatestKycForUser(userId));
+//    }
+//    
+//    
+//}
+
+
+
+
 @RestController
 @RequestMapping("/api/user/kyc")
 public class KycUserController {
@@ -51,25 +83,17 @@ public class KycUserController {
         this.kycService = kycService;
     }
 
-    // User submits KYC (no userId in path, extract from JWT)
     @PostMapping("/submit")
     public ResponseEntity<KycResponseDto> submitKyc(@RequestBody @Valid KycRequestDto dto) {
-        // Extract userId from JWT token using SecurityUtils
         Long userId = SecurityUtils.getCurrentUserId();
-        
         return ResponseEntity.ok(kycService.submitKyc(userId, dto));
     }
 
-    // User checks his KYC status (no userId in path, extract from JWT)
     @GetMapping("/status")
     public ResponseEntity<KycResponseDto> getMyKyc() throws KycNotFoundException {
-        // Extract userId from JWT token using SecurityUtils
         Long userId = SecurityUtils.getCurrentUserId();
-
-        return ResponseEntity.ok(kycService.getKycByUserId(userId));
+        return ResponseEntity.ok(kycService.getLatestKycForUser(userId));
     }
 }
-
-
 
 

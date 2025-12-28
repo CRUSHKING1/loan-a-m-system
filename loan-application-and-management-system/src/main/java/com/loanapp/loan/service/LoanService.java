@@ -1,6 +1,7 @@
 package com.loanapp.loan.service;
 
 import com.loanapp.common.enums.LoanStatus;
+import com.loanapp.kyc.exception.KycNotFoundException;
 import com.loanapp.loan.dto.*;
 import com.loanapp.user.exception.UserNotFoundException;
 
@@ -8,9 +9,9 @@ import java.util.List;
 
 public interface LoanService {
 
-    LoanResponseDto applyLoan(Long userId, LoanApplyRequestDto request) throws UserNotFoundException; // For applying a loan
+    LoanResponseDto applyLoan(Long userId, LoanApplyRequestDto request) throws UserNotFoundException, KycNotFoundException; // For applying a loan
 
-    LoanPreviewResponseDto previewLoan(Long userId, LoanApplyRequestDto request) throws UserNotFoundException; // For previewing the loan eligibility
+    LoanPreviewResponseDto previewLoan(Long userId, LoanApplyRequestDto request) throws UserNotFoundException, KycNotFoundException; // For previewing the loan eligibility
 
     LoanResponseDto approveOrRejectLoan(Long loanId, LoanApprovalRequestDto request); // For admin to approve/reject
 

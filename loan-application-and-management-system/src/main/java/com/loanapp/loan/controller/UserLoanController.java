@@ -1,6 +1,7 @@
 package com.loanapp.loan.controller;
 
 import com.loanapp.common.enums.LoanStatus;
+import com.loanapp.kyc.exception.KycNotFoundException;
 import com.loanapp.loan.dto.LoanApplyRequestDto;
 import com.loanapp.loan.dto.LoanPreviewResponseDto;
 import com.loanapp.loan.dto.LoanResponseDto;
@@ -24,14 +25,14 @@ public class UserLoanController {
 
     // Endpoint for applying a loan
     @PostMapping("/apply")
-    public ResponseEntity<LoanResponseDto> applyLoan(@RequestParam Long userId, @RequestBody LoanApplyRequestDto request) throws UserNotFoundException {
+    public ResponseEntity<LoanResponseDto> applyLoan(@RequestParam Long userId, @RequestBody LoanApplyRequestDto request) throws UserNotFoundException, KycNotFoundException {
         LoanResponseDto response = loanService.applyLoan(userId, request);
         return ResponseEntity.ok(response);
     }
 
     // Endpoint for previewing a loan (eligibility check without applying)
     @PostMapping("/preview")
-    public ResponseEntity<LoanPreviewResponseDto> previewLoan(@RequestParam Long userId, @RequestBody LoanApplyRequestDto request) throws UserNotFoundException {
+    public ResponseEntity<LoanPreviewResponseDto> previewLoan(@RequestParam Long userId, @RequestBody LoanApplyRequestDto request) throws UserNotFoundException, KycNotFoundException {
         LoanPreviewResponseDto preview = loanService.previewLoan(userId, request);
         return ResponseEntity.ok(preview);
     }

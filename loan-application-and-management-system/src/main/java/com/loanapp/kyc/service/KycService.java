@@ -1,22 +1,23 @@
 package com.loanapp.kyc.service;
 
-import java.util.List;
-
 import com.loanapp.kyc.dto.KycRequestDto;
 import com.loanapp.kyc.dto.KycResponseDto;
 import com.loanapp.kyc.exception.KycNotFoundException;
+
+import java.util.List;
 
 public interface KycService {
 
     KycResponseDto submitKyc(Long userId, KycRequestDto dto);
 
-    KycResponseDto approveKyc(Long userId) throws KycNotFoundException;
+    KycResponseDto getLatestKycForUser(Long userId) throws KycNotFoundException;
 
-    KycResponseDto rejectKyc(Long userId) throws KycNotFoundException;
+    boolean isKycApproved(Long userId);
 
-    boolean isKycApproved(Long userId); // used in loan service 
-    
     List<KycResponseDto> getPendingKycs();
+
+    KycResponseDto approveKyc(Long kycId);
+
+    KycResponseDto rejectKyc(Long kycId);
     
-    KycResponseDto getKycByUserId(Long userId) throws KycNotFoundException;
 }

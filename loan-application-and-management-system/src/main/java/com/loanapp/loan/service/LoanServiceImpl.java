@@ -6,7 +6,9 @@ import com.loanapp.creditscore.entity.CreditScore;
 import com.loanapp.creditscore.repository.CreditScoreRepository;
 import com.loanapp.emi.service.EmiService;
 import com.loanapp.kyc.entity.Kyc;
+import com.loanapp.kyc.exception.KycNotFoundException;
 import com.loanapp.kyc.repository.KycRepository;
+import com.loanapp.kyc.service.KycService;
 import com.loanapp.loan.dto.*;
 import com.loanapp.loan.entity.Loan;
 import com.loanapp.loan.exception.LoanException;
@@ -30,12 +32,13 @@ public class LoanServiceImpl implements LoanService {
     private final KycRepository kycRepository;
     private final CreditScoreRepository creditScoreRepository;
     private final EmiService emiService;
+    private final KycService kycService;
 
-
+    
 
 	public LoanServiceImpl(LoanRepository loanRepository, LoanEligibilityRules eligibilityRules,
 			InterestRuleEngine interestRuleEngine, UserRepository userRepository, KycRepository kycRepository,
-			CreditScoreRepository creditScoreRepository, EmiService emiService) {
+			CreditScoreRepository creditScoreRepository, EmiService emiService, KycService kycService) {
 		super();
 		this.loanRepository = loanRepository;
 		this.eligibilityRules = eligibilityRules;
@@ -44,18 +47,21 @@ public class LoanServiceImpl implements LoanService {
 		this.kycRepository = kycRepository;
 		this.creditScoreRepository = creditScoreRepository;
 		this.emiService = emiService;
+		this.kycService = kycService;
 	}
 
 	@Override
-    public LoanResponseDto applyLoan(Long userId, LoanApplyRequestDto request) throws UserNotFoundException {
+    public LoanResponseDto applyLoan(Long userId, LoanApplyRequestDto request) throws UserNotFoundException, KycNotFoundException {
             //using repo instead of servcie for time restrcition
 		   User user = userRepository.findById(userId)      // ** make exception in this servcie
 	                .orElseThrow(() -> new UserNotFoundException("User not found"));
 		   
-		   Kyc kyc=kycRepository.findByUserId(userId).orElseThrow(()->new RuntimeException("KYC NOT FOUND "));// ** make exception in this servcie
-
-		   if(kyc.getStatus()!=KycStatus.APPROVED)throw new RuntimeException("KYC NOT APPROVED Pleaase aprove the kyc");// ** make exception in this servcie
-
+		  if( kycService.isKycApproved(userId)==false)throw new RuntimeException("Kyc is not approved");
+		   
+		  Kyc kyc = kycRepository.findTopByUserIdOrderByCreatedAtDesc(userId)
+	                .orElseThrow(() -> new KycNotFoundException("No KYC found"));
+		   
+		  
 		   
 		   
 		
@@ -104,15 +110,15 @@ public class LoanServiceImpl implements LoanService {
     }
 
     @Override
-    public LoanPreviewResponseDto previewLoan(Long userId, LoanApplyRequestDto request) throws UserNotFoundException {
+    public LoanPreviewResponseDto previewLoan(Long userId, LoanApplyRequestDto request) throws UserNotFoundException, KycNotFoundException {
         // Check loan eligibility (without saving it to DB)
     	   User user = userRepository.findById(userId)      // ** make exception in this servcie
 	                .orElseThrow(() -> new UserNotFoundException("User not found"));
 		   
-		   Kyc kyc=kycRepository.findByUserId(userId).orElseThrow(()->new RuntimeException("KYC NOT FOUND "));// ** make exception in this servcie
-
-		   if(kyc.getStatus()!=KycStatus.APPROVED)throw new RuntimeException("KYC NOT APPROVED Pleaase aprove the kyc");// ** make exception in this servcie
-
+    	   if( kycService.isKycApproved(userId)==false)throw new RuntimeException("Kyc is not approved");
+		   
+ 		  Kyc kyc = kycRepository.findTopByUserIdOrderByCreatedAtDesc(userId)
+ 	                .orElseThrow(() -> new KycNotFoundException("No KYC found"));
 		   
 		   
 		

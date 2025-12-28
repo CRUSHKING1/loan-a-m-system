@@ -23,16 +23,16 @@ public class Kyc extends Auditable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false) // removed unique for now
     private Long userId;
 
     @Column(nullable = false, length = 100)
     private String fullName;
 
-    @Column(nullable = false, unique = true, length = 10)
+    @Column(nullable = false, length = 10)
     private String panNumber;
 
-    @Column(nullable = false, length = 4)
+    @Column(nullable = false, length = 4)//remoced unique
     private String aadhaarLast4;
 
     @Enumerated(EnumType.STRING)
