@@ -7,7 +7,7 @@ import com.loanapp.loan.entity.Loan;
 
 public interface EmiService {
 
-    void generateEmiSchedule(Loan loan, double monthlyIncome);
+    void generateEmiSchedule(Loan loan);
 
     List<EmiResponseDto> getAllEmis(Long loanId);
 

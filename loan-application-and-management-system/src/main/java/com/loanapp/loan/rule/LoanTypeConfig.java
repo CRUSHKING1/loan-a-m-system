@@ -11,7 +11,7 @@ import java.util.Arrays;
 public enum LoanTypeConfig {
 
     HOME(LoanType.HOME, 500000, 10000000, 60, 360, 8.5),
-    PERSONAL(LoanType.PERSONAL, 10000, 500000, 12, 60, 13.5),
+    PERSONAL(LoanType.PERSONAL, 10000, 500000, 3, 60, 13.5),
     VEHICLE(LoanType.VEHICLE, 50000, 2000000, 12, 84, 9.5);
 
     private final LoanType loanType;

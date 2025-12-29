@@ -23,10 +23,9 @@ public class EmiServiceImpl implements EmiService {
     }
 
     @Override
-    public void generateEmiSchedule(Loan loan, double monthlyIncome) {
+    public void generateEmiSchedule(Loan loan) {
 
         BigDecimal emiAmount = BigDecimal.valueOf(loan.getEmiAmount());
-        EmiEligibilityRule.validate(monthlyIncome, emiAmount);
 
         for (int i = 1; i <= loan.getTenureMonths(); i++) {
 

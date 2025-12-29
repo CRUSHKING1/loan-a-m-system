@@ -20,7 +20,7 @@ public class AdminLoanController {
     }
 
     // Endpoint for admin to approve or reject a loan
-    @PostMapping("/{loanId}/approve-or-reject")
+    @PostMapping("/{loanId}/decision")
     public ResponseEntity<LoanResponseDto> approveOrRejectLoan(@PathVariable Long loanId, @RequestBody LoanApprovalRequestDto request) {
         LoanResponseDto loan = loanService.approveOrRejectLoan(loanId, request);
         return ResponseEntity.ok(loan);

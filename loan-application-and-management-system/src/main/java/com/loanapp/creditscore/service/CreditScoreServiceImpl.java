@@ -41,4 +41,19 @@ public class CreditScoreServiceImpl implements CreditScoreService {
                 creditScore.getScore()
         );
     }
+	@Override
+    public Integer getOrCreateCreditScore1(String panNumber) {
+		
+        CreditScore creditScore = repository.findByPanNumber(panNumber)
+                .orElseGet(() -> {
+                    CreditScore cs = new CreditScore();
+                    cs.setPanNumber(panNumber);
+                    cs.setScore(CreditScoreConstants.DEFAULT_CREDIT_SCORE);
+                    return repository.save(cs);
+                });
+    	
+     
+        return  creditScore.getScore();
+        
+	}    
 }

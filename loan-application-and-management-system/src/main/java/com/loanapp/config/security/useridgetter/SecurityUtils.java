@@ -2,9 +2,10 @@ package com.loanapp.config.security.useridgetter;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 
 import com.loanapp.config.security.model.CustomUserDetails;
-
+@Component
 public final class SecurityUtils {
 
     private SecurityUtils() {}

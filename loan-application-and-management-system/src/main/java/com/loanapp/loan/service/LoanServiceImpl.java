@@ -1,152 +1,271 @@
 package com.loanapp.loan.service;
 
-import com.loanapp.common.enums.KycStatus;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.loanapp.common.enums.LoanRejectionReason;
 import com.loanapp.common.enums.LoanStatus;
-import com.loanapp.creditscore.entity.CreditScore;
-import com.loanapp.creditscore.repository.CreditScoreRepository;
+import com.loanapp.common.enums.LoanType;
+import com.loanapp.config.security.useridgetter.SecurityUtils;
+import com.loanapp.creditscore.service.CreditScoreService;
 import com.loanapp.emi.service.EmiService;
+import com.loanapp.emi.util.EmiEligibilityRule;
 import com.loanapp.kyc.entity.Kyc;
 import com.loanapp.kyc.exception.KycNotFoundException;
 import com.loanapp.kyc.repository.KycRepository;
 import com.loanapp.kyc.service.KycService;
-import com.loanapp.loan.dto.*;
+import com.loanapp.loan.dto.LoanApplyRequestDto;
+import com.loanapp.loan.dto.LoanApprovalRequestDto;
+import com.loanapp.loan.dto.LoanPreviewResponseDto;
+import com.loanapp.loan.dto.LoanResponseDto;
 import com.loanapp.loan.entity.Loan;
 import com.loanapp.loan.exception.LoanException;
 import com.loanapp.loan.repository.LoanRepository;
+import com.loanapp.loan.rule.InterestRuleEngine;
 import com.loanapp.loan.rule.LoanEligibilityRules;
-import com.loanapp.user.entity.User;
+import com.loanapp.loan.util.EmiCalculator;
 import com.loanapp.user.exception.UserNotFoundException;
 import com.loanapp.user.repository.UserRepository;
-import com.loanapp.loan.rule.InterestRuleEngine;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
+@Transactional
 public class LoanServiceImpl implements LoanService {
 
     private final LoanRepository loanRepository;
     private final LoanEligibilityRules eligibilityRules;
     private final InterestRuleEngine interestRuleEngine;
-    private final UserRepository userRepository;
     private final KycRepository kycRepository;
-    private final CreditScoreRepository creditScoreRepository;
     private final EmiService emiService;
     private final KycService kycService;
+    private final UserRepository userRepository;
+    public final SecurityUtils securityutils;
+    private final CreditScoreService creditScoreService;
 
-    
+    public LoanServiceImpl(
+            LoanRepository loanRepository,
+            LoanEligibilityRules eligibilityRules,
+            InterestRuleEngine interestRuleEngine,
+            KycRepository kycRepository,
+            EmiService emiService,
+            KycService kycService,
+            UserRepository userRepository,
+            SecurityUtils securityutils,
+            CreditScoreService creditScoreService) {
 
-	public LoanServiceImpl(LoanRepository loanRepository, LoanEligibilityRules eligibilityRules,
-			InterestRuleEngine interestRuleEngine, UserRepository userRepository, KycRepository kycRepository,
-			CreditScoreRepository creditScoreRepository, EmiService emiService, KycService kycService) {
-		super();
-		this.loanRepository = loanRepository;
-		this.eligibilityRules = eligibilityRules;
-		this.interestRuleEngine = interestRuleEngine;
-		this.userRepository = userRepository;
-		this.kycRepository = kycRepository;
-		this.creditScoreRepository = creditScoreRepository;
-		this.emiService = emiService;
-		this.kycService = kycService;
-	}
+        this.loanRepository = loanRepository;
+        this.eligibilityRules = eligibilityRules;
+        this.interestRuleEngine = interestRuleEngine;
+        this.kycRepository = kycRepository;
+        this.emiService = emiService;
+        this.kycService = kycService;
+        this.userRepository = userRepository;
+        this.securityutils=securityutils;
+       
+        this.creditScoreService = creditScoreService;
+    }
 
-	@Override
-    public LoanResponseDto applyLoan(Long userId, LoanApplyRequestDto request) throws UserNotFoundException, KycNotFoundException {
-            //using repo instead of servcie for time restrcition
-		   User user = userRepository.findById(userId)      // ** make exception in this servcie
-	                .orElseThrow(() -> new UserNotFoundException("User not found"));
-		   
-		  if( kycService.isKycApproved(userId)==false)throw new RuntimeException("Kyc is not approved");
-		   
-		  Kyc kyc = kycRepository.findTopByUserIdOrderByCreatedAtDesc(userId)
-	                .orElseThrow(() -> new KycNotFoundException("No KYC found"));
-		   
-		  
-		   
-		   
-		
-		// Step 1: Validate eligibility
-        eligibilityRules.validateLoanLimits(request.getLoanType(), request.getLoanAmount(), request.getTenureMonths());
+    // ===================== USER APIs =====================
+
+    @Override
+    public LoanResponseDto applyLoan(LoanApplyRequestDto request)
+            throws UserNotFoundException, KycNotFoundException {
+
+        Long userId = SecurityUtils.getCurrentUserId();
         
-      //  CreditScore credScore=creditScoreRepository.findByPanNumber(kyc.getPanNumber()).orElseThrow(()->new RuntimeException("Credit score not found"));
-        //** implement credit score service getorsetcreditscore // 0 for credit sxore deafult// update this
-        int creditScore=650;
-
-        double income = kyc.getMonthlyIncome();
-        int age = kyc.getAge();
-
+        userRepository.findById(userId)
+        .orElseThrow(() -> new UserNotFoundException("User not found"));
         
-        
-        
-        eligibilityRules.validatePerson(creditScore, income, age);
+        Kyc kyc = kycRepository.findTopByUserIdOrderByCreatedAtDesc(userId)
+                .orElseThrow(() -> new KycNotFoundException("No KYC found"));
 
-        // Step 2: Calculate interest rate
+        int creditScore = creditScoreService.getOrCreateCreditScore1(kyc.getPanNumber());
+
         double interestRate = interestRuleEngine.calculate(
-                request.getLoanType(), creditScore, income, age, request.getTenureMonths());
+                request.getLoanType(),
+                creditScore,
+                kyc.getMonthlyIncome(),
+                kyc.getAge(),
+                request.getTenureMonths()
+        );
 
-        // Step 3: Create loan and save
+        double emiAmount = EmiCalculator.calculate(
+                request.getLoanAmount(),
+                interestRate,
+                request.getTenureMonths()
+        );
+  
+        
         Loan loan = new Loan();
         loan.setUserId(userId);
         loan.setLoanType(request.getLoanType());
         loan.setLoanAmount(request.getLoanAmount());
         loan.setTenureMonths(request.getTenureMonths());
         loan.setInterestRate(interestRate);
-        loan.setEmiAmount(request.getLoanAmount() * interestRate / 100); // Simplified EMI calculation
-        loan.setStatus(LoanStatus.APPLIED);
+        loan.setEmiAmount(emiAmount);
         
         
        
-      
-         //** check emi status and affortability and chift it into loan service for proper error handling
-        // 🔗 EMI integration
-        loan= loanRepository.save(loan);
-        emiService.generateEmiSchedule(loan, kyc.getMonthlyIncome());
-        loan.setStatus(LoanStatus.ACTIVE);
-       
+        LoanType requestedType = request.getLoanType();
+        
+      if( eligibilityRules.validatePerson(loan, creditScore, kyc.getMonthlyIncome(), kyc.getAge()))
+      {
+    	  loan.setStatus(LoanStatus.REJECTED);
+    	
+    	   return mapToDto(loanRepository.save(loan));
+      }
         
         
+        
+        
+        
+        if (!kycService.isKycApproved(userId)) {
+           loan.setRejectionReason(LoanRejectionReason.KYC_INCOMPLETE); 
+           loan.setStatus(LoanStatus.REJECTED);
+               return mapToDto(loanRepository.save(loan));
+              
+        }
+     
+        long activeLoanCount =
+                loanRepository.countByUserIdAndStatus(userId, LoanStatus.ACTIVE);
+             loan.setStatus(LoanStatus.REJECTED);
 
+        if (activeLoanCount >= 3) {
+        	
+        	loan.setRejectionReason(LoanRejectionReason.LOAN_COUNT_EXCEEDS);
+        	loan.setStatus(LoanStatus.REJECTED);
+        	
+        	return mapToDto(loanRepository.save(loan));
+            
+        }
+
+        boolean sameTypeActive =
+                loanRepository.existsByUserIdAndLoanTypeAndStatus(
+                        userId, requestedType, LoanStatus.ACTIVE);
+
+        if (sameTypeActive && requestedType != LoanType.PERSONAL) {
+            loan.setRejectionReason(LoanRejectionReason.ACTIVE_LOAN_EXISTS);
+            loan.setStatus(LoanStatus.REJECTED);
+            loanRepository.save(loanRepository.save(loan));
+            return mapToDto(loan);
+        }
+
+
+       if( eligibilityRules.validateLoanLimits(
+        		loan,
+                request.getLoanType(),
+                request.getLoanAmount(),
+                request.getTenureMonths()
+        )) {
+    	   loan.setStatus(LoanStatus.REJECTED);
+    	
+     	  return mapToDto(loanRepository.save(loan));
+       }
+
+
+      
+       
+        
+        BigDecimal emiAmountBigDecimal = new BigDecimal(String.valueOf(emiAmount));
+
+     // Now pass the BigDecimal to the validate method
+     
+
+        boolean eligible = EmiEligibilityRule.validate(kyc.getMonthlyIncome(), emiAmountBigDecimal);
+
+        if (eligible) {
+            loan.setStatus(LoanStatus.ACTIVE);
+          
+            loan = loanRepository.save(loan);
+            emiService.generateEmiSchedule(loan);
+        } else {
+            loan.setStatus(LoanStatus.REJECTED);
+            loan.setRejectionReason(LoanRejectionReason.EMI_AMOUNT_NOT_IN_RANGE);
+           
+            return mapToDto(loanRepository.save(loan));
+        }
+        loan.setDisbursedDate(LocalDate.now());      
         return mapToDto(loan);
     }
 
-    @Override
-    public LoanPreviewResponseDto previewLoan(Long userId, LoanApplyRequestDto request) throws UserNotFoundException, KycNotFoundException {
-        // Check loan eligibility (without saving it to DB)
-    	   User user = userRepository.findById(userId)      // ** make exception in this servcie
-	                .orElseThrow(() -> new UserNotFoundException("User not found"));
-		   
-    	   if( kycService.isKycApproved(userId)==false)throw new RuntimeException("Kyc is not approved");
-		   
- 		  Kyc kyc = kycRepository.findTopByUserIdOrderByCreatedAtDesc(userId)
- 	                .orElseThrow(() -> new KycNotFoundException("No KYC found"));
-		   
-		   
-		
-		// Step 1: Validate eligibility
-       eligibilityRules.validateLoanLimits(request.getLoanType(), request.getLoanAmount(), request.getTenureMonths());
-       
-       CreditScore credScore=creditScoreRepository.findByPanNumber(kyc.getPanNumber()).orElseThrow(()->new RuntimeException("Credit score not found"));
-       
-       int creditScore=credScore.getScore();
+    
 
-       double income = kyc.getMonthlyIncome();
-       int age = kyc.getAge();
+	@Override
+    public LoanPreviewResponseDto previewLoan(LoanApplyRequestDto request)
+            throws UserNotFoundException, KycNotFoundException {
 
-       
-        eligibilityRules.validateLoanLimits(request.getLoanType(), request.getLoanAmount(), request.getTenureMonths());
-        eligibilityRules.validatePerson(creditScore, income, age);
+        Long userId = SecurityUtils.getCurrentUserId();
 
-        // Calculate interest rate based on eligibility
-        double interestRate = interestRuleEngine.calculate(request.getLoanType(), creditScore, income, age, request.getTenureMonths());
+        userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        // Return the preview information without persisting the loan
-        LoanPreviewResponseDto previewDto = new LoanPreviewResponseDto();
-        previewDto.setInterestRate(interestRate);
-        previewDto.setEmiAmount(request.getLoanAmount() * interestRate / 100);  // Simplified calculation
-        previewDto.setTotalPayable(previewDto.getEmiAmount() * request.getTenureMonths());
+        if (!kycService.isKycApproved(userId)) {
+            throw new LoanException("KYC is not approved");
+        }
 
-        return previewDto;
+        Kyc kyc = kycRepository.findTopByUserIdOrderByCreatedAtDesc(userId)
+                .orElseThrow(() -> new KycNotFoundException("No KYC found"));
+
+        int creditScore = creditScoreService.getOrCreateCreditScore1(kyc.getPanNumber());
+
+        double interestRate = interestRuleEngine.calculate(
+                request.getLoanType(),
+                creditScore,
+                kyc.getMonthlyIncome(),
+                kyc.getAge(),
+                request.getTenureMonths()
+        );
+
+        double emiAmount = EmiCalculator.calculate(
+                request.getLoanAmount(),
+                interestRate,
+                request.getTenureMonths()
+        );
+
+        LoanPreviewResponseDto dto = new LoanPreviewResponseDto();
+        dto.setInterestRate(interestRate);
+        dto.setEmiAmount(emiAmount);
+        dto.setTotalPayable(emiAmount * request.getTenureMonths());
+     
+        return dto;
     }
+
+    @Override
+    public List<LoanResponseDto> getMyLoans()
+            throws UserNotFoundException {
+
+        Long userId = SecurityUtils.getCurrentUserId();
+
+        userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        return loanRepository.findByUserId(userId)
+                .stream()
+                .map(this::mapToDto)
+                .toList();
+    }
+
+    @Override
+    public List<LoanResponseDto> getMyLoansByStatus(LoanStatus status)
+            throws UserNotFoundException {
+
+        Long userId = SecurityUtils.getCurrentUserId();
+
+        userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        return loanRepository.findByUserIdAndStatus(userId, status)
+                .stream()
+                .map(this::mapToDto)
+                .toList();
+    }
+
+    
+
+    // ===================== ADMIN APIs =====================
 
     @Override
     public LoanResponseDto approveOrRejectLoan(Long loanId, LoanApprovalRequestDto request) {
@@ -155,58 +274,44 @@ public class LoanServiceImpl implements LoanService {
 
         if (request.isApproved()) {
             loan.setStatus(LoanStatus.APPROVED);
+            loan.setDisbursedDate(LocalDate.now());
+            loan.setRejectionReason(null);
+            emiService.generateEmiSchedule(loan);
+            //emi gen
         } else {
             loan.setStatus(LoanStatus.REJECTED);
             loan.setRejectionReason(request.getRejectionReason());
-          
         }
 
-        loanRepository.save(loan);
-        return mapToDto(loan);
+        
+        return mapToDto(loanRepository.save(loan));
     }
 
     @Override
     public LoanResponseDto activateLoan(Long loanId) {
         Loan loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new LoanException("Loan not found"));
+
         loan.setStatus(LoanStatus.ACTIVE);
         loanRepository.save(loan);
+
         return mapToDto(loan);
-    }
-
-    @Override
-    public LoanResponseDto closeLoan(Long loanId) {
-        Loan loan = loanRepository.findById(loanId)
-                .orElseThrow(() -> new LoanException("Loan not found"));
-        loan.setStatus(LoanStatus.CLOSED);
-        loanRepository.save(loan);
-        return mapToDto(loan);
-    }
-
-    @Override
-    public List<LoanResponseDto> getLoansByUser(Long userId) {
-        return loanRepository.findByUserId(userId).stream()
-                .map(this::mapToDto).toList();
-    }
-
-    @Override
-    public List<LoanResponseDto> getLoansByUserAndStatus(Long userId, LoanStatus status) {
-        return loanRepository.findByUserIdAndStatus(userId, status).stream()
-                .map(this::mapToDto).toList();
     }
 
     @Override
     public List<LoanResponseDto> getAllLoans() {
-        return loanRepository.findAll().stream()
-                .map(this::mapToDto).toList();
-    }
-
+        return loanRepository.findAll()
+                .stream()
+                .map(this::mapToDto)
+                .toList();
+       }
     @Override
     public List<LoanResponseDto> getLoansByStatus(LoanStatus status) {
-        return loanRepository.findByStatus(status).stream()
-                .map(this::mapToDto).toList();
+        return loanRepository.findByStatus(status)
+                .stream()
+                .map(this::mapToDto)
+                .toList();
     }
-
     private LoanResponseDto mapToDto(Loan loan) {
         LoanResponseDto dto = new LoanResponseDto();
         dto.setLoanId(loan.getId());
@@ -220,3 +325,4 @@ public class LoanServiceImpl implements LoanService {
         return dto;
     }
 }
+                

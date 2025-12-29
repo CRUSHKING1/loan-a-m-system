@@ -9,22 +9,21 @@ import java.util.List;
 
 public interface LoanService {
 
-    LoanResponseDto applyLoan(Long userId, LoanApplyRequestDto request) throws UserNotFoundException, KycNotFoundException; // For applying a loan
+    LoanResponseDto applyLoan(LoanApplyRequestDto request) throws UserNotFoundException, KycNotFoundException; // For applying a loan
 
-    LoanPreviewResponseDto previewLoan(Long userId, LoanApplyRequestDto request) throws UserNotFoundException, KycNotFoundException; // For previewing the loan eligibility
+    LoanPreviewResponseDto previewLoan(LoanApplyRequestDto request) throws UserNotFoundException, KycNotFoundException; // For previewing the loan eligibility
 
-    LoanResponseDto approveOrRejectLoan(Long loanId, LoanApprovalRequestDto request); // For admin to approve/reject
+    LoanResponseDto approveOrRejectLoan(Long loanId, LoanApprovalRequestDto request); // For admin to approve/reject loan
 
     LoanResponseDto activateLoan(Long loanId); // For admin to activate the loan
 
-    LoanResponseDto closeLoan(Long loanId); // To close the loan
+  
 
-    List<LoanResponseDto> getLoansByUser(Long userId); // View loans for a user
+    List<LoanResponseDto> getMyLoans() throws UserNotFoundException; // For viewing loans of the current user
 
-    List<LoanResponseDto> getLoansByUserAndStatus(Long userId, LoanStatus status); // Filter loans by user and status
+    List<LoanResponseDto> getMyLoansByStatus(LoanStatus status) throws UserNotFoundException; // Filter loans by user and status (matching implementation)
 
     List<LoanResponseDto> getAllLoans(); // Admin view of all loans
 
     List<LoanResponseDto> getLoansByStatus(LoanStatus status); // Filter loans by status (for admin view)
-
 }

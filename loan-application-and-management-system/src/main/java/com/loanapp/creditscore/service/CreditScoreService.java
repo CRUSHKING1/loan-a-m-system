@@ -7,4 +7,6 @@ public interface CreditScoreService {
 
 	
 	CreditScoreResponseDto getOrCreateCreditScore(String panNumber);
+
+	Integer getOrCreateCreditScore1(String panNumber);
 }
