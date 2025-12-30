@@ -6,5 +6,5 @@ import com.loanapp.payment.dto.PaymentResponseDto;
 
 public interface PaymentService {
 
-	PaymentResponseDto payEmi(Long emiId, Long userId, BigDecimal amount);
+	PaymentResponseDto payEmi(Long emiId,  BigDecimal amount);
 }

@@ -12,7 +12,6 @@ public class PaymentResponseDto {
 
     private Long paymentId;
     private Long emiId;
-    private Long userId;
 
     private BigDecimal amount;
     private PaymentStatus status;

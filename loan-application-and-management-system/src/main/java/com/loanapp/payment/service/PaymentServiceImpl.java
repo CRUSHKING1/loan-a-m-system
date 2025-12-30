@@ -6,10 +6,12 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.loanapp.common.enums.EmiStatus;
 import com.loanapp.common.enums.LoanStatus;
 import com.loanapp.common.enums.PaymentStatus;
+import com.loanapp.config.security.useridgetter.SecurityUtils;
 import com.loanapp.emi.entity.Emi;
 import com.loanapp.emi.repository.EmiRepository;
 import com.loanapp.emi.util.PenaltyCalculator;
@@ -20,6 +22,7 @@ import com.loanapp.payment.entity.Payment;
 import com.loanapp.payment.repository.PaymentRepository;
 
 @Service
+@Transactional
 public class PaymentServiceImpl implements PaymentService {
 
     private final EmiRepository emiRepository;
@@ -36,65 +39,77 @@ public class PaymentServiceImpl implements PaymentService {
         this.loanRepository = loanRepository;
     }
 
+    @Override
+    public PaymentResponseDto payEmi(Long emiId, BigDecimal amount) {
 
-@Override
-public PaymentResponseDto payEmi(Long emiId, Long userId, BigDecimal amount) {
-     //** need loan id and user id 
-	
-    Emi emi = emiRepository.findById(emiId)
-            .orElseThrow(() -> new RuntimeException("EMI not found"));
+        Long userId = SecurityUtils.getCurrentUserId(); // ✅ FIX
 
-    if (emi.getStatus() == EmiStatus.PAID) {
-        throw new RuntimeException("EMI already paid");
+        Emi emi = emiRepository.findById(emiId)
+                .orElseThrow(() -> new RuntimeException("EMI not found"));
+
+        validateEmiOwnership(emi, userId); // ✅ BOLA FIX
+
+        if (emi.getStatus() == EmiStatus.PAID) {
+            throw new RuntimeException("EMI already paid");
+        }
+
+        BigDecimal penalty = BigDecimal.ZERO;
+
+        if (LocalDate.now().isAfter(emi.getDueDate())) {
+            long daysLate = ChronoUnit.DAYS.between(
+                    emi.getDueDate(), LocalDate.now());
+            penalty = PenaltyCalculator.calculate(
+                    emi.getEmiAmount(), daysLate);
+            emi.setStatus(EmiStatus.OVERDUE);
+        }
+
+        BigDecimal totalPayable = emi.getEmiAmount().add(penalty);
+
+        if (amount.compareTo(totalPayable) != 0) {
+            throw new RuntimeException(
+                    "Exact EMI amount required: " + totalPayable);
+        }
+
+        // Update EMI
+        emi.setPenaltyAmount(penalty);
+        emi.setTotalPayable(totalPayable);
+        emi.setPaidDate(LocalDate.now());
+        emi.setStatus(EmiStatus.PAID);
+        emiRepository.save(emi);
+
+        // Save Payment
+        Payment payment = new Payment();
+        payment.setEmiId(emiId);
+        payment.setUserId(userId);
+        payment.setAmount(amount);
+        payment.setStatus(PaymentStatus.SUCCESS);
+        payment.setPaymentDate(LocalDateTime.now());
+        paymentRepository.save(payment);
+
+        closeLoanIfCompleted(emi.getLoanId());
+
+        // Response DTO
+        PaymentResponseDto response = new PaymentResponseDto();
+        response.setPaymentId(payment.getId());
+        response.setEmiId(emiId);
+        response.setAmount(amount);
+        response.setStatus(PaymentStatus.SUCCESS);
+        response.setPaymentDate(payment.getPaymentDate());
+        response.setMessage("EMI payment successful");
+
+        return response;
     }
 
-    BigDecimal penalty = BigDecimal.ZERO;
+    // 🔐 BOLA VALIDATION (NEW)
+    private void validateEmiOwnership(Emi emi, Long userId) {
 
-    if (LocalDate.now().isAfter(emi.getDueDate())) {
-        long daysLate = ChronoUnit.DAYS.between(
-                emi.getDueDate(), LocalDate.now());
-        penalty = PenaltyCalculator.calculate(
-                emi.getEmiAmount(), daysLate);
-        emi.setStatus(EmiStatus.OVERDUE);
+        Loan loan = loanRepository.findById(emi.getLoanId())
+                .orElseThrow(() -> new RuntimeException("Loan not found"));
+
+        if (!loan.getUserId().equals(userId)) {
+            throw new RuntimeException("Unauthorized EMI payment attempt");
+        }
     }
-
-    BigDecimal totalPayable = emi.getEmiAmount().add(penalty);
-
-    if (amount.compareTo(totalPayable) != 0) {
-        throw new RuntimeException(
-                "Exact EMI amount required: " + totalPayable);
-    }
-
-    // Update EMI
-    emi.setPenaltyAmount(penalty);
-    emi.setTotalPayable(totalPayable);
-    emi.setPaidDate(LocalDate.now());
-    emi.setStatus(EmiStatus.PAID);
-    emiRepository.save(emi);
-
-    // Save payment
-    Payment payment = new Payment();
-    payment.setEmiId(emiId);
-    payment.setUserId(userId);
-    payment.setAmount(amount);
-    payment.setStatus(PaymentStatus.SUCCESS);
-    payment.setPaymentDate(LocalDateTime.now());
-    paymentRepository.save(payment);
-
-    closeLoanIfCompleted(emi.getLoanId());
-
-    // Build response
-    PaymentResponseDto response = new PaymentResponseDto();
-    response.setPaymentId(payment.getId());
-    response.setEmiId(emiId);
-    response.setUserId(userId);
-    response.setAmount(amount);
-    response.setStatus(PaymentStatus.SUCCESS);
-    response.setPaymentDate(payment.getPaymentDate());
-    response.setMessage("EMI payment successful");
-
-    return response;
-}
 
     private void closeLoanIfCompleted(Long loanId) {
 
@@ -111,4 +126,3 @@ public PaymentResponseDto payEmi(Long emiId, Long userId, BigDecimal amount) {
         }
     }
 }
-
